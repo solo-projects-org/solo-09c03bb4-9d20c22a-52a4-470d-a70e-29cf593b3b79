@@ -7,4 +7,10 @@ services:
       - "8000:8000"
     environment:
       MAX_UPLOAD_MB: "512"
+      REPORT_TTL_SECONDS: "3600"
+    volumes:
+      - reconcile-reports:/app/var/reconcile-reports
     restart: unless-stopped
+
+volumes:
+  reconcile-reports:

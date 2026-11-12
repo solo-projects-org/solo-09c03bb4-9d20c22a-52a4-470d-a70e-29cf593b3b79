@@ -123,6 +123,22 @@ h4 { margin: 0 0 8px; font-size: 13px; color: var(--muted); font-weight: 650; le
 .chip.danger { background: var(--danger-soft); border-color: #f3cbd2; color: #7d1e30; }
 .chip.danger b { color: var(--danger); }
 
+.topbar-actions { display: flex; gap: 10px; flex: 0 0 auto; }
+
+.reconcile-summary { border-top-color: var(--teal); }
+.download-button { white-space: nowrap; }
+.diff-chip b { font-size: 16px; }
+.diff-wrong { background: var(--danger-soft); border-color: #f3cbd2; color: #7d1e30; }
+.diff-wrong b { color: var(--danger); }
+.diff-mis { background: var(--amber-soft); border-color: #efdfb9; color: var(--amber); }
+.diff-mis b { color: var(--amber); }
+.diff-re { background: #e8f1fb; border-color: #c9dff3; color: #245b8e; }
+.diff-re b { color: #245b8e; }
+.diff-missing { background: var(--ok-soft); border-color: #bfe5d5; color: var(--ok); }
+.diff-missing b { color: var(--ok); }
+
+.reconcile-card { border-top: 3px solid var(--teal); }
+
 .notice {
   margin: 16px 0 0;
   padding: 12px 14px;
@@ -412,6 +428,7 @@ input:focus, textarea:focus {
 @media (max-width: 760px) {
   .wrap { width: min(100% - 24px, 1180px); }
   .topbar-inner { align-items: flex-start; }
+  .topbar-actions { flex-direction: column; }
   .form-grid { grid-template-columns: 1fr; }
   .ticket-head { align-items: flex-start; }
   .summary-title { flex-direction: column; }

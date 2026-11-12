@@ -16,7 +16,10 @@
         <p>Iceberg v2 源快照 · 仅位置删除（positional deletes）</p>
       </div>
     </div>
-    <a class="button ghost" href="{{ url_for('sample') }}">载入样例</a>
+    <div class="topbar-actions">
+      <a class="button ghost" href="{{ url_for('reconcile_sample') }}">整日核验样例</a>
+      <a class="button ghost" href="{{ url_for('sample') }}">载入样例</a>
+    </div>
   </div>
 </header>
 
@@ -32,6 +35,44 @@
     </ul>
     {% endif %}
     <p class="hint">为避免部分结论，本次没有返回任何票号的核对结果。</p>
+  </section>
+  {% endif %}
+
+  {% if reconcile %}
+  <section class="summary reconcile-summary">
+    <div class="summary-title">
+      <div>
+        <h2>整日核验结果</h2>
+        <p class="subtle">
+          清单 {{ reconcile.manifest.entries|length }} 项 ·
+          源行 {{ reconcile.source_row_count }} 行 ·
+          计费数据行 {{ reconcile.billing_row_count }} 行 ·
+          票号列 <code>{{ reconcile.ticket_column }}</code>
+          {% if source == 'reconcile-sample' %} · <span class="badge sample">内置样例</span>{% endif %}
+        </p>
+      </div>
+      <a class="button primary download-button"
+         href="{{ url_for('reconcile_report', token=reconcile.report_token) }}">
+        下载差异 CSV
+      </a>
+    </div>
+    <div class="chips">
+      <span class="chip diff-chip diff-wrong"><b>{{ reconcile.diff_counts['错引'] }}</b> 错引</span>
+      <span class="chip diff-chip diff-mis"><b>{{ reconcile.diff_counts['误计'] }}</b> 误计</span>
+      <span class="chip diff-chip diff-re"><b>{{ reconcile.diff_counts['重计'] }}</b> 重计</span>
+      <span class="chip diff-chip diff-missing"><b>{{ reconcile.diff_counts['漏计'] }}</b> 漏计</span>
+      <span class="chip"><b>{{ reconcile.total_diffs }}</b> 条差异合计</span>
+    </div>
+    <p class="notice">
+      全部文件读验通过后才生成差异报告。错引、误计、重计附计费 CSV 的数据行号
+      （从 1 起）；漏计附源路径、从 0 起算的行号和票号。报告链接在本服务
+      临时目录保留，过期自动清理。
+    </p>
+    {% if reconcile.warnings %}
+    <ul class="warnings">
+      {% for warning in reconcile.warnings %}<li>{{ warning }}</li>{% endfor %}
+    </ul>
+    {% endif %}
   </section>
   {% endif %}
 
@@ -271,6 +312,50 @@
   </section>
   {% endif %}
 
+  <section class="card form-card reconcile-card">
+    <div class="card-head">
+      <h2>整日核验（试跑后补计 / 去重 / 重跑清单）</h2>
+      <p class="subtle">
+        上传同一航次日的 Iceberg v2 有效文件清单、清单中每个
+        data / position_delete 文件的 Parquet 副本，以及计费 CSV。
+        计费 CSV 必须包含 <code>ticket_no</code>、<code>file_path</code>、
+        <code>pos</code>（从 0 起算）三列。含等值删除、缺件、坏行或读写
+        失败时不发报告。
+      </p>
+    </div>
+    <form method="post" action="{{ url_for('reconcile_check') }}" enctype="multipart/form-data">
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">有效文件清单 <small>CSV 或 JSON</small></span>
+          <input type="file" name="manifest" accept=".csv,.json,text/csv,application/json" required>
+        </label>
+        <label class="field">
+          <span class="field-label">计费 CSV <small>ticket_no / file_path / pos</small></span>
+          <input type="file" name="billing" accept=".csv,text/csv" required>
+        </label>
+      </div>
+      <div class="form-grid">
+        <label class="field">
+          <span class="field-label">Parquet 副本 <small>可多选</small></span>
+          <input type="file" name="files" accept=".parquet,application/octet-stream" multiple>
+          <span class="field-hint">
+            文件名必须与清单的 <code>uploaded_filename</code> 一致；
+            位置删除沿用原路径 + 行号 + 序列号规则
+          </span>
+        </label>
+        <label class="field narrow">
+          <span class="field-label">票号列名</span>
+          <input type="text" name="ticket_column" value="{{ ticket_column or 'ticket_no' }}">
+          <span class="field-hint">数据 Parquet 中整数票号列的名称</span>
+        </label>
+      </div>
+      <div class="form-actions">
+        <button class="button primary" type="submit">开始整日核验</button>
+        <a class="button ghost" href="{{ url_for('reconcile_sample') }}">载入整日核验样例（含重计与漏计）</a>
+      </div>
+    </form>
+  </section>
+
   <section class="card form-card">
     <div class="card-head">
       <h2>上传并核对</h2>
@@ -325,7 +410,8 @@
     <p>
       位置删除匹配条件：删除记录的 <code>file_path</code> 等于原始路径、
       <code>pos</code> 等于从 0 起算的文件内行号，且删除文件的数据序列号不小于数据文件。
-      缺失副本或任一读取失败都会中止整次核对。
+      缺失副本或任一读取失败都会中止整次核对。整日核验分批读写磁盘缓冲，
+      不在内存攒下整日的票据、计费行或差异。
     </p>
   </div>
 </footer>

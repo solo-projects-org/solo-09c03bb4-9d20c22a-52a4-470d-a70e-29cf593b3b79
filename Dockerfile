@@ -15,7 +15,9 @@ COPY templates ./templates
 COPY static ./static
 COPY sample ./sample
 
-RUN useradd --system --uid 10001 --create-home appuser \
+# Pre-created so a fresh named volume inherits appuser ownership on first mount.
+RUN mkdir -p /app/var/reconcile-reports \
+    && useradd --system --uid 10001 --create-home appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
